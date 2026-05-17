@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudSubnet Pro | Advanced IP & VPC Planner</title>
+    <link rel="icon" type="image/x-icon" href="static/mess.ico">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <aside>
+        <div class="logo">
+            <i class="fas fa-network-wired"></i>
+            <span>CloudSubnet Pro</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a class="nav-link active" onclick="showSection('dashboard')"><i class="fas fa-th-large"></i>
+                        Dashboard</a></li>
+                <li><a class="nav-link" onclick="showSection('cidr-calc')"><i class="fas fa-calculator"></i> CIDR
+                        Calculator</a></li>
+                <li><a class="nav-link" onclick="showSection('splitter')"><i class="fas fa-columns"></i> Subnet
+                        Splitter</a></li>
+                <li><a class="nav-link" onclick="showSection('planner')"><i class="fas fa-cloud"></i> AWS VPC
+                        Planner</a></li>
+                <li><a class="nav-link" onclick="showSection('overlap')"><i class="fas fa-exclamation-triangle"></i>
+                        Overlap Validator</a></li>
+                <li><a class="nav-link" onclick="showSection('terraform')"><i class="fas fa-code"></i> TF Generator</a>
+                </li>
+            </ul>
+        </nav>
+    </aside>
+
+    <main>
+        <header>
+            <h2 id="page-title">Dashboard</h2>
+            <button class="theme-toggle" onclick="toggleTheme()">
+                <i class="fas fa-moon" id="theme-icon"></i>
+            </button>
+        </header>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="active animate-fade">
+            <div class="grid">
+                <div class="card" onclick="showSection('cidr-calc')">
+                    <h3>CIDR Calculator</h3>
+                    <p>Calculate network details, usable IPs, and AWS specific reservations.</p>
+                </div>
+                <div class="card" onclick="showSection('splitter')">
+                    <h3>Subnet Splitter</h3>
+                    <p>Divide parent networks into smaller subnets based on mask or count.</p>
+                </div>
+                <div class="card" onclick="showSection('planner')">
+                    <h3>AWS VPC Planner</h3>
+                    <p>Plan multi-AZ VPC architectures with recommended subnet ranges.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CIDR Calculator Section -->
+        <section id="cidr-calc" class="animate-fade">
+            <div class="card">
+                <h3>Calculate CIDR Details</h3>
+                <div class="form-group">
+                    <label>IP Address / CIDR Block</label>
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="text" id="cidr-input" placeholder="e.g., 10.20.0.0/24">
+                        <button class="btn" onclick="calculateCIDR()">Calculate</button>
+                    </div>
+                </div>
+                <div id="cidr-results" style="display: none;">
+                    <table class="result-table">
+                        <tbody id="cidr-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Subnet Splitter Section -->
+        <section id="splitter" class="animate-fade">
+            <div class="card">
+                <h3>Split Network</h3>
+                <div class="form-group">
+                    <label>Parent Network</label>
+                    <input type="text" id="split-parent" placeholder="e.g., 10.20.0.0/16">
+                </div>
+                <div class="grid">
+                    <div class="form-group">
+                        <label>New Subnet Mask (e.g., 24)</label>
+                        <input type="text" id="split-mask" placeholder="/24">
+                    </div>
+                    <div class="form-group">
+                        <label>OR Number of Subnets</label>
+                        <input type="number" id="split-count" placeholder="e.g., 4">
+                    </div>
+                </div>
+                <button class="btn" onclick="splitSubnet()">Generate Subnets</button>
+                <div id="split-results" style="margin-top: 1.5rem;"></div>
+            </div>
+        </section>
+
+        <!-- AWS VPC Planner Section -->
+        <section id="planner" class="animate-fade">
+            <div class="card">
+                <h3>VPC Architecture Planner</h3>
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Parent CIDR</label>
+                        <input type="text" id="vpc-cidr" placeholder="10.0.0.0/16">
+                    </div>
+                    <div class="form-group">
+                        <label>Availability Zones</label>
+                        <select id="vpc-azs">
+                            <option value="1">1 AZ</option>
+                            <option value="2" selected>2 AZs</option>
+                            <option value="3">3 AZs</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Public Subnets</label>
+                        <input type="number" id="vpc-public" value="2">
+                    </div>
+                    <div class="form-group">
+                        <label>Private Subnets</label>
+                        <input type="number" id="vpc-private" value="2">
+                    </div>
+                    <div class="form-group">
+                        <label>DB Subnets</label>
+                        <input type="number" id="vpc-db" value="2">
+                    </div>
+                </div>
+                <button class="btn" onclick="planVPC()">Generate Plan</button>
+            </div>
+
+            <div id="planner-results" style="display: none;">
+                <div class="card">
+                    <h3>Subnet Plan</h3>
+                    <div id="plan-details"></div>
+                </div>
+                <div class="card">
+                    <h3>Network Visualization</h3>
+                    <div id="diagram-mount" class="diagram-container"></div>
+                </div>
+                <div class="card">
+                    <h3>AWS Recommendations</h3>
+                    <ul id="recommendations-list" style="padding-left: 1.5rem; color: var(--text-secondary);"></ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Overlap Validator Section -->
+        <section id="overlap" class="animate-fade">
+            <div class="card">
+                <h3>Overlap Validator</h3>
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-secondary);">Enter multiple CIDRs
+                    (one per line) to check for overlaps.</p>
+                <textarea id="overlap-input" rows="5" placeholder="10.0.1.0/24&#10;10.0.1.128/25"
+                    style="margin-bottom: 1rem;"></textarea>
+                <button class="btn" onclick="validateOverlap()">Check Overlaps</button>
+                <div id="overlap-results" style="margin-top: 1.5rem;"></div>
+            </div>
+        </section>
+
+        <!-- Terraform Section -->
+        <section id="terraform" class="animate-fade">
+            <div class="card">
+                <h3>Terraform Generator</h3>
+                <p style="margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-secondary);">First generate an AWS
+                    VPC plan, then click below to get the code.</p>
+                <button class="btn" onclick="generateTF()">Generate Terraform Code</button>
+                <div id="tf-results" style="margin-top: 1.5rem; display: none;">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+                        <button class="btn btn-secondary" onclick="copyToClipboard('tf-code')">Copy to
+                            Clipboard</button>
+                    </div>
+                    <code id="tf-code"></code>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/diagram.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>
